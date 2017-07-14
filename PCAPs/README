@@ -1,0 +1,5 @@
+## More info here to follow later on
+
+pParser.channels(int(notDecoded[19] + notDecoded[18], 16)) << ath9k
+pParser.channels(int(notDecoded[11] + notDecoded[10], 16)) << TI_WL1251
+

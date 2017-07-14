@@ -1,0 +1,98 @@
+#!/usr/bin/python2.7
+
+import argparse, logging, signal, sys
+from lib.dbControl import Builder
+from lib.os_control import Control
+from lib.snarf import Snarf
+from lib.unifier import Unify
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+from scapy.all import *
+
+def crtlC(cap, unity):
+    """Handle CTRL+C."""
+    def tmp(signal, frame):
+        print 'Stopping gracefully'
+        cap.con.commit()
+        print 'Total packets logged:\n'
+        for k, v in unity.logDict.items():
+            print '%s -- %s' % (k, v)
+        sys.exit(0)
+    return tmp
+
+def main(args):
+    
+    ## Non usage scenarios
+    if args.m[0] == 'k9' and args.t is None:
+        print 'Target must be specified for k9 mode\n'
+        sys.exit(1)
+    
+    if args.m[0] == 'listen' and args.t:
+        print 'Targeted functionality not currently implemented for listen mode\n'
+        sys.exit(1)
+    
+    ## Notate the driver in use
+    nic = args.i[0]
+    control = Control(nic)
+    iwDriver = control.iwDriver()
+    
+    ## Instantiate unity
+    unity = Unify(iwDriver)
+    
+    ## Instantiate the DB
+    cap = Builder()
+    
+    ## Handle interrupts
+    signal_handler = crtlC(cap, unity)
+    signal.signal(signal.SIGINT, signal_handler)
+
+    ## Create the snarf instance that holds the database
+    snarf = Snarf(cap, unity, args.m, args.p)
+    
+    ## Active sniffing
+    if args.i:
+        ### Perhaps switch logic to lfilter
+        ### For now the logic is in sniffer method
+        
+        ## Listen with no target
+        if args.m[0] == 'listen':
+            pHandler = snarf.sniffer()
+            sniff(iface = nic, prn = pHandler, store = 0)
+
+        ## k9
+        if args.m[0] == 'k9':
+            pHandler = snarf.k9(args.t.lower())
+            sniff(iface = nic, prn = pHandler, store = 0)
+            
+    ## Offline Open kSnarfs
+    #print "sniff(offline = 'PCAPs/example.pcap', prn = pcapParser)"
+    
+    ## Offline Targeted kSnarfs
+    #print "sniff(offline = 'PCAPs/example.pcap', prn = pcapParser)"
+    
+
+if __name__=="__main__":
+    parser = argparse.ArgumentParser(description = 'kSnarf',
+                                     prog = 'kSnarf')
+    parser.add_argument('-i',
+                        help = 'interface',
+                        nargs = 1,
+                        required = True)
+    parser.add_argument('-m',
+                        help = 'mode',
+                        choices = ['listen', 'k9'],
+                        nargs = 1,
+                        required = True)
+    parser.add_argument('-p',
+                        help = 'protocol',
+                        choices = ['dhcp'])
+    #parser.add_argument('-r', help = 'receive data from a pcap')
+    parser.add_argument('-t',
+                        help = 'target MAC')
+    args = parser.parse_args()
+    
+    ## Deal with groups later
+    if not (args.i or args.r or (args.t and not args.m)):
+        print('Must pick an option')
+        sys.exit(1)
+    
+    main(args)
