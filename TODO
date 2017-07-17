@@ -1,0 +1,14 @@
+## Add mutually exclusive groups for args
+
+## Add reduction options
+    - BSSID
+    - Control
+    - Management
+    - Data
+
+## Play with PCAP timestamp logging
+    - Right now this uses the localtime, versus captured time.
+    - Refer to unifier.times()
+
+## Implement DB visualization of some sort
+

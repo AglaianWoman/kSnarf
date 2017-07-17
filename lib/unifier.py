@@ -29,6 +29,8 @@ class Unify(object):
 
     def times(self):
         """Timestamp function"""
+        ### This converts to Wireshark style
+        #int(wepCrypto.endSwap('0x' + p.byteRip(f.notdecoded[8:], qty = 8, compress = True)), 16)
         epoch = int(time.time())
         lDate = time.strftime('%Y%m%d', time.localtime())
         lTime = time.strftime('%H:%M:%S', time.localtime())

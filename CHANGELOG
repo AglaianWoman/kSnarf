@@ -1,0 +1,7 @@
+## 16 July 2017
+    - Added in PCAP reading mode
+    - Moved around snarf.py in prep for handler.py
+    - Added manual driver selection capability
+
+## 9 July 2017
+    - Initial Release

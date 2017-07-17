@@ -22,18 +22,28 @@ def crtlC(cap, unity):
 def main(args):
     
     ## Non usage scenarios
-    if args.m[0] == 'k9' and args.t is None:
-        print 'Target must be specified for k9 mode\n'
+    if args.m is not None:
+        if args.m == 'k9' and args.t is None:
+            print 'Target must be specified for k9 mode\n'
+            sys.exit(1)
+        if args.m == 'listen' and args.t:
+            print 'Targeted functionality not currently implemented for listen mode\n'
+            sys.exit(1)
+    if args.i is None and args.d is None:
+        print '-i OR -d must be selected\n'
         sys.exit(1)
     
-    if args.m[0] == 'listen' and args.t:
-        print 'Targeted functionality not currently implemented for listen mode\n'
-        sys.exit(1)
-    
+
     ## Notate the driver in use
-    nic = args.i[0]
-    control = Control(nic)
-    iwDriver = control.iwDriver()
+    if args.i is not None:
+        nic = args.i[0]
+        control = Control(nic)
+    if args.d is not None:
+        iwDriver = args.d
+    else:    
+        iwDriver = control.iwDriver()
+    
+    
     
     ## Instantiate unity
     unity = Unify(iwDriver)
@@ -49,50 +59,53 @@ def main(args):
     snarf = Snarf(cap, unity, args.m, args.p)
     
     ## Active sniffing
-    if args.i:
+    if args.r is None:
         ### Perhaps switch logic to lfilter
         ### For now the logic is in sniffer method
         
         ## Listen with no target
-        if args.m[0] == 'listen':
+        if args.m == 'listen':
             pHandler = snarf.sniffer()
             sniff(iface = nic, prn = pHandler, store = 0)
 
         ## k9
-        if args.m[0] == 'k9':
+        if args.m == 'k9':
             pHandler = snarf.k9(args.t.lower())
             sniff(iface = nic, prn = pHandler, store = 0)
-            
-    ## Offline Open kSnarfs
-    #print "sniff(offline = 'PCAPs/example.pcap', prn = pcapParser)"
     
-    ## Offline Targeted kSnarfs
-    #print "sniff(offline = 'PCAPs/example.pcap', prn = pcapParser)"
-    
+    ## PCAP reading
+    else:
+        if args.r is not None:
+            pHandler = snarf.reader()
+            sniff(offline = args.r, prn = pHandler, store = 0)
+            snarf.cap.con.commit()
+   
 
 if __name__=="__main__":
-    parser = argparse.ArgumentParser(description = 'kSnarf',
+    parser = argparse.ArgumentParser(description = 'kSnarf - FOSS Intelligence Gathering of the 802.11 spectrum',
                                      prog = 'kSnarf')
+    parser.add_argument('-d',
+                        help = 'driver choice',
+                        choices = ['ath9k', 'ath9k_htc', 'unknown', 'wl12xx'])
+                        
     parser.add_argument('-i',
                         help = 'interface',
-                        nargs = 1,
-                        required = True)
+                        nargs = 1)
     parser.add_argument('-m',
                         help = 'mode',
-                        choices = ['listen', 'k9'],
-                        nargs = 1,
-                        required = True)
+                        choices = ['k9', 'listen'])
     parser.add_argument('-p',
                         help = 'protocol',
                         choices = ['dhcp'])
-    #parser.add_argument('-r', help = 'receive data from a pcap')
+    parser.add_argument('-r',
+                        help = 'receive data from a pcap')
     parser.add_argument('-t',
                         help = 'target MAC')
     args = parser.parse_args()
     
     ## Deal with groups later
     if not (args.i or args.r or (args.t and not args.m)):
-        print('Must pick an option')
+        print('Try:\nkSnarf --help\n')
         sys.exit(1)
     
     main(args)

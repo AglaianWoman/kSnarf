@@ -22,22 +22,77 @@ class Snarf(object):
             self.dhcp = Dhcp(self.cap, self.unity)
 
 
+    def k9(self, mac):
+        def snarf(packet):
+            """This function listens for a given MAC
+            Currently no logic for detecting FCfield, etc...
+            This functionality will be added later on
+            """
+            if packet.addr1 == mac or\
+                packet.addr2 == mac or\
+                packet.addr3 == mac or\
+                packet.addr4 == mac:
+                
+                ## Handle main
+                self.handlerMain(packet)
+                
+                ## Notify
+                print 'SNARF!! %s traffic detected!' % (mac)
+                
+                notDecoded = hexstr(str(packet.notdecoded), onlyhex=1).split(' ')
+                try:
+                    fSig = -(256 - int(notDecoded[self.unity.offset + 3], 16))
+                except IndexError:
+                    fSig = ''
+                print 'RSSI: %s' % fSig
+                print '\n'
+                #self.cap.entry(packet)
+            else:
+                return
+        return snarf
+
+
+    def macGrab(self, packet):
+        """Defines the OUI for a given MAC
+        This function serves as an example, it is not ready for implementation
+        """
+        try:
+            parsed_mac = netaddr.EUI(packet.addr2)
+            print parsed_mac.oui.registration().org
+        except netaddr.core.NotRegisteredError, e:
+            fields.append('UNKNOWN')
+
+
+    ### Move to handler.py
+    def handlerMain(self, packet):
+        """Handles core aspect of logging"""
+        self.main.trigger(packet)
+        self.unity.logUpdate('main')
+        self.unity.logUpdate('total')
+
+
+    ### Move to handler.py
+    def handlerProtocol(self, packet):
+        """Handles protocol aspect of logging"""
+        if 'dhcp' in self.protocols:
+            logged = self.dhcp.trigger(packet)
+            if logged == True:
+                self.unity.logUpdate('dhcp')
+
+
+    def reader(self):
+        def snarf(packet):
+            """Parse a PCAP"""
+            self.handlerMain(packet)
+            self.handlerProtocol(packet)
+        return snarf
+
+
     def sniffer(self):
         def snarf(packet):
             """Sniff the data"""
-            
-            ## Handle main
-            self.main.trigger(packet)
-            self.unity.logUpdate('main')
-            
-            ## Handle protocols
-            if 'dhcp' in self.protocols:
-                logged = self.dhcp.trigger(packet)
-                if logged == True:
-                    self.unity.logUpdate('dhcp')
-
-            ## Increase total
-            self.unity.logUpdate('total')
+            self.handlerMain(packet)
+            self.handlerProtocol(packet)
             
             ## stdouts
             self.unity.logUpdate('iterCount')
@@ -66,54 +121,3 @@ class Snarf(object):
                 self.pCount = 0
                 self.cap.con.commit()
         return snarf
-
-
-    def printable(self, iPut):
-        """Pretty printing function"""
-        return ''.join(char for char in iPut if isprint(char))
-
-
-    def k9(self, mac):
-        def snarf(packet):
-            """This function listens for a given MAC
-            Currently no logic for detecting FCfield, etc...
-            This functionality will be added later on
-            """
-            if packet.addr1 == mac or\
-                packet.addr2 == mac or\
-                packet.addr3 == mac or\
-                packet.addr4 == mac:
-                
-                ## Handle main
-                self.main.trigger(packet)
-                self.unity.logUpdate('main')
-                
-                ## Increase total
-                self.unity.logUpdate('total')
-                
-                ## Notify
-                print 'SNARF!! %s traffic detected!' % (mac)
-                
-                notDecoded = hexstr(str(packet.notdecoded), onlyhex=1).split(' ')
-                try:
-                    fSig = -(256 - int(notDecoded[self.unity.offset + 3], 16))
-                except IndexError:
-                    fSig = ''
-                print 'RSSI: %s' % fSig
-                print '\n'
-                #self.cap.entry(packet)
-            else:
-                return
-        return snarf
-
-
-    def macGrab(self, packet):
-        """Defines the OUI for a given MAC
-        This function serves as an example, it is not ready for implementation
-        """
-        try:
-            parsed_mac = netaddr.EUI(packet.addr2)
-            print parsed_mac.oui.registration().org
-        except netaddr.core.NotRegisteredError, e:
-            fields.append('UNKNOWN')
-            

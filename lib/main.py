@@ -26,7 +26,6 @@ class Main(object):
         """Trigger mechanism for main entries"""
 
         ## Deal with driver offsets
-        #if packet.haslayer('Dot11'):
         notDecoded = hexstr(str(packet.notdecoded), onlyhex=1).split(' ')
         if self.unity.offset:
             #print('OFFSET')
