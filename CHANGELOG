@@ -1,5 +1,6 @@
 ## 23 July 2017
     - Added more to docstrings for drivers.parser()
+    - Added driver offset for rt2800usb
 
 ## 16 July 2017
     - Added in PCAP reading mode
