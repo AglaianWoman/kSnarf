@@ -1,3 +1,6 @@
+## 23 July 2017
+    - Added more to docstrings for drivers.parser()
+
 ## 16 July 2017
     - Added in PCAP reading mode
     - Moved around snarf.py in prep for handler.py
